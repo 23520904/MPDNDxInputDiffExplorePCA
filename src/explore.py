@@ -7,6 +7,8 @@ import math
 import time
 from datetime import datetime
 import random
+import pandas as pd
+import numpy as np
 
 def calculate_combinations(m, n):
     return math.factorial(m) // (math.factorial(n) * math.factorial(m - n))
@@ -89,102 +91,220 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         data_speck,Y = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
+        num_significant = np.sum(eigen_value - lambda_base > t0)
+                if num_significant >= t1:
 
-        if sum(eigen_value - lambda_base > t0) >= t1: #3
+            try:
+                pca_results = pca_helper.DimensionReduction(
+                    data_speck,
+                    n_components=n_components
+                )
 
-            pca_results = pca_helper.DimensionReduction(
-                data_speck,
-                n_components=n_components
-            )
+                start_time = time.time()
 
-            start_time = time.time()
+                labels = clustering_helper.kmeans_clustering(
+                    pca_results,
+                    3 ** n_components,
+                    3
+                )
 
-            labels = clustering_helper.kmeans_clustering(
-                pca_results,
-                3 ** n_components,
-                3
-            )
+                score = float(
+                    clustering_helper.calculate_silhouette(
+                        pca_results,
+                        labels
+                    )
+                )
 
-            score = clustering_helper.calculate_silhouette(
-                pca_results,
-                labels
-            )
+                elapsed_time = time.time() - start_time
 
-            end_time = time.time()
-
-            elapsed_time = end_time - start_time
+            except Exception as e:
+                print(f"[Warning] Skip candidate : {e}")
+                continue
 
             current_time = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 
-            num_significant = np.sum(eigen_value - lambda_base > t0)
-
             mask = (eigen_value - lambda_base) > t0
-            selected_eigenvalues = eigen_value[mask]
             selected_indices = np.where(mask)[0]
+            selected_eigenvalues = eigen_value[mask]
 
-            print("Eigenvalues:")
-            print(np.round(eigen_value, 6))
+            # ---------------------------------------------------------
+            # format polytope
+            # ---------------------------------------------------------
 
-            print("Selected Eigenvalues:")
-            for idx, val in zip(selected_indices, selected_eigenvalues):
-                print(f"  λ[{idx}] = {val:.6f}")
-            
-            polytope_str = (
-                f"[({polytope_difference[0][0]:04x},{polytope_difference[0][1]:04x}), "
-                f"({polytope_difference[1][0]:04x},{polytope_difference[1][1]:04x}), "
-                f"({polytope_difference[2][0]:04x},{polytope_difference[2][1]:04x})]"
-            )
+            def diff_hex(d):
+                return f"(0x{d[0]:04X}, 0x{d[1]:04X})"
 
-            message = (
-                "\n"
-                "============================================================\n"
-                f"[{current_time}]\n"
-                f"Polytope Difference : {polytope_str}\n"
-                f"Significant Eigen   : {num_significant}\n"
-                f"Silhouette Score    : {score:.6f}\n"
-                f"Elapsed Time        : {elapsed_time:.3f} sec\n"
-                "\nEigenvalues:\n"
-                f"{np.round(eigen_value,6).tolist()}\n\n"
-                "Selected Eigenvalues:\n"
-                "============================================================"
-            )
+            polyA_hex = "[" + ", ".join(diff_hex(x) for x in pdiff1) + "]"
+            polyB_hex = "[" + ", ".join(diff_hex(x) for x in pdiff2) + "]"
+
+            message = f"""
+================================================================================
+Explore Polytope Candidate
+================================================================================
+
+Time
+    {current_time}
+
+Progress
+    {len(pdiffs_num):,} / {num_pdiff_cases:,}
+
+--------------------------------------------------------------------------------
+Parameters
+--------------------------------------------------------------------------------
+
+Rounds              : {nr}
+Dataset Size        : {datasize:,}
+Block Size          : {blocksize}
+Word Size           : {wordsize}
+Hamming Weight      : {hamming_weight}
+
+lambda_base         : {lambda_base:.8f}
+t0                  : {t0}
+t1                  : {t1}
+
+PCA Components      : {n_components}
+KMeans Clusters     : {3 ** n_components}
+
+--------------------------------------------------------------------------------
+Polytope A
+--------------------------------------------------------------------------------
+
+Decimal
+
+{pdiff1}
+
+HEX
+
+{polyA_hex}
+
+--------------------------------------------------------------------------------
+Polytope B
+--------------------------------------------------------------------------------
+
+Decimal
+
+{pdiff2}
+
+HEX
+
+{polyB_hex}
+
+--------------------------------------------------------------------------------
+Dataset
+--------------------------------------------------------------------------------
+
+Input Shape         : {data_speck.shape}
+PCA Shape           : {pca_results.shape}
+
+--------------------------------------------------------------------------------
+Eigenvalues
+--------------------------------------------------------------------------------
+
+All Eigenvalues
+
+{np.round(eigen_value,6).tolist()}
+
+Selected Index
+
+{selected_indices.tolist()}
+
+Selected Eigenvalues
+
+{np.round(selected_eigenvalues,6).tolist()}
+
+Number Significant
+
+{int(num_significant)}
+
+--------------------------------------------------------------------------------
+Clustering
+--------------------------------------------------------------------------------
+
+Labels Shape        : {labels.shape}
+
+Silhouette Score    : {score:.6f}
+
+Elapsed Time        : {elapsed_time:.3f} sec
+
+================================================================================
+
+"""
 
             print(message)
 
             if savepath is not None:
 
-                # ---------- TXT ----------
-                with open(savepath + ".txt", "a") as f:
-                    f.write(message + "\n")
+                save_dir = os.path.dirname(savepath)
 
-                # ---------- CSV ----------
+                if save_dir:
+                    os.makedirs(save_dir, exist_ok=True)
+
+                # ---------------- TXT ----------------
+
+                with open(savepath + ".txt", "a", encoding="utf8") as f:
+                    f.write(message)
+
+                # ---------------- CSV ----------------
+
                 csv_path = savepath + ".csv"
 
                 file_exists = os.path.isfile(csv_path)
 
-                with open(csv_path, "a", newline="") as csvfile:
+                with open(csv_path, "a", newline="", encoding="utf8") as csvfile:
 
                     writer = csv.writer(csvfile)
 
                     if not file_exists:
+
                         writer.writerow([
                             "time",
-                            "polytope_difference",
-                            "significant_eigen",
+                            "visited",
+                            "round",
+                            "datasize",
+                            "blocksize",
+                            "wordsize",
+                            "hw",
+                            "lambda_base",
+                            "t0",
+                            "t1",
+                            "pca_components",
+                            "clusters",
+                            "polyA_hex",
+                            "polyB_hex",
+                            "polyA_decimal",
+                            "polyB_decimal",
+                            "num_significant",
+                            "selected_index",
                             "selected_eigenvalues",
-                            "silhouette_score",
+                            "all_eigenvalues",
+                            "silhouette",
                             "elapsed_time"
                         ])
 
                     writer.writerow([
                         current_time,
-                        polytope_str,
+                        len(pdiffs_num),
+                        nr,
+                        datasize,
+                        blocksize,
+                        wordsize,
+                        hamming_weight,
+                        lambda_base,
+                        t0,
+                        t1,
+                        n_components,
+                        3 ** n_components,
+                        polyA_hex,
+                        polyB_hex,
+                        str(pdiff1),
+                        str(pdiff2),
                         int(num_significant),
-                        ";".join(f"{v:.6f}" for v in selected_eigenvalues),
-                        round(score, 6),
-                        round(elapsed_time, 3)
+                        ";".join(map(str, selected_indices)),
+                        ";".join(f"{x:.8f}" for x in selected_eigenvalues),
+                        ";".join(f"{x:.8f}" for x in eigen_value),
+                        score,
+                        elapsed_time
                     ])
-
 
 
 

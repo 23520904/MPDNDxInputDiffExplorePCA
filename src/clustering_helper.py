@@ -21,9 +21,7 @@ def kmeans_clustering(data, num_clusters, n_init=10):
 
 
 def calculate_silhouette(data, labels):
-    silhouette_avg = silhouette_score(data, labels)
-    
-    return np.array(silhouette_avg)
+    return float(silhouette_score(data, labels))
 
 def visualize_clusters_2D(data, labels, title=None):
     fig = plt.figure()
