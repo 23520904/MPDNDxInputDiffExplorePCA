@@ -86,7 +86,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         pdiff1 = pdiff_number_to_difference(pdiff_num1,wordsize)
         pdiff2 = pdiff_number_to_difference(pdiff_num2,wordsize)
         
-        data_speck = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
+        data_speck,Y = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
 
