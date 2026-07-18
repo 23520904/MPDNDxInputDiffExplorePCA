@@ -69,13 +69,14 @@ def pdiff_number_to_difference(pdiff, wordsize=16):
         for number in pdiff
     )
 
+
 def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=100000, hamming_weight=1, t0=0.003, t1=3, n_components=3, savepath=None):
     pdiffs_num = set()
 
-    lambda_base = 1/(4*blocksize)
+    lambda_base = 1/(4*blocksize) #1
 
     num_idiff_cases =  calculate_combinations(blocksize,hamming_weight)
-    num_pdiff_cases = calculate_combinations(num_idiff_cases,3)
+    num_pdiff_cases = calculate_combinations(num_idiff_cases,3) #2
     
     
     while len(pdiffs_num) < num_pdiff_cases:
@@ -89,7 +90,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
 
-        if sum(eigen_value - lambda_base > t0) >= t1:
+        if sum(eigen_value - lambda_base > t0) >= t1: #3
 
             pca_results = pca_helper.DimensionReduction(
                 data_speck,
@@ -117,6 +118,17 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
             num_significant = np.sum(eigen_value - lambda_base > t0)
 
+            mask = (eigen_value - lambda_base) > t0
+            selected_eigenvalues = eigen_value[mask]
+            selected_indices = np.where(mask)[0]
+
+            print("Eigenvalues:")
+            print(np.round(eigen_value, 6))
+
+            print("Selected Eigenvalues:")
+            for idx, val in zip(selected_indices, selected_eigenvalues):
+                print(f"  λ[{idx}] = {val:.6f}")
+            
             polytope_str = (
                 f"[({polytope_difference[0][0]:04x},{polytope_difference[0][1]:04x}), "
                 f"({polytope_difference[1][0]:04x},{polytope_difference[1][1]:04x}), "
@@ -131,6 +143,9 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                 f"Significant Eigen   : {num_significant}\n"
                 f"Silhouette Score    : {score:.6f}\n"
                 f"Elapsed Time        : {elapsed_time:.3f} sec\n"
+                "\nEigenvalues:\n"
+                f"{np.round(eigen_value,6).tolist()}\n\n"
+                "Selected Eigenvalues:\n"
                 "============================================================"
             )
 
@@ -156,6 +171,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                             "time",
                             "polytope_difference",
                             "significant_eigen",
+                            "selected_eigenvalues",
                             "silhouette_score",
                             "elapsed_time"
                         ])
@@ -163,7 +179,8 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                     writer.writerow([
                         current_time,
                         polytope_str,
-                        num_significant,
+                        int(num_significant),
+                        ";".join(f"{v:.6f}" for v in selected_eigenvalues),
                         round(score, 6),
                         round(elapsed_time, 3)
                     ])
