@@ -1,7 +1,7 @@
 import numpy as np
 from os import urandom
 
-MASK_VAL = 2 ** WORD_SIZE() - 1
+
 
 def WORD_SIZE():
     return (16)
@@ -11,6 +11,8 @@ def ALPHA():
 
 def BETA():
     return (2)
+
+MASK_VAL = 2 ** WORD_SIZE() - 1
 
 def left_round(value, shiftBits):
 	t1 = (value >> (WORD_SIZE() - shiftBits)) ^ (value << shiftBits)
