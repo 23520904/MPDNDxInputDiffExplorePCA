@@ -63,9 +63,9 @@ def number_to_difference(number, wordsize=16):
     right = number & 0xFFFF
     return (left, right)
 
-def pdiff_number_to_difference(pdiff):
+def pdiff_number_to_difference(pdiff, wordsize=16):
     return tuple(
-        number_to_difference(number)
+        number_to_difference(number, wordsize=wordsize)
         for number in pdiff
     )
 
@@ -82,8 +82,8 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         pdiff_num1 = generate_polytope_diff_num(blocksize, hamming_weight, polytope_pool=pdiffs_num)
         pdiff_num2 = generate_polytope_diff_num(blocksize, hamming_weight, polytope_pool=pdiffs_num)
         
-        pdiff1 = pdiff_number_to_difference(pdiff_num1)
-        pdiff2 = pdiff_number_to_difference(pdiff_num2)
+        pdiff1 = pdiff_number_to_difference(pdiff_num1,wordsize)
+        pdiff2 = pdiff_number_to_difference(pdiff_num2,wordsize)
         
         data_speck = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
 

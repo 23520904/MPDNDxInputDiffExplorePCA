@@ -20,91 +20,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
 
-def eigenvalue_decomposition(
-    dataset: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute PCA eigenvalues (explained variance ratios) and eigenvectors.
-
-    Parameters
-    ----------
-    dataset : np.ndarray
-        Feature matrix of shape ``(N, d)``.
-
-    Returns
-    -------
-    eigen_values : np.ndarray
-        Explained variance ratios, shape ``(d,)``, summing to 1.
-    eigen_vectors : np.ndarray
-        Principal components, shape ``(d, d)``.
-    """
-    scaler = StandardScaler()
-    pca = PCA()
-    pipeline = make_pipeline(scaler, pca)
-    pipeline.fit(dataset)
-
-    return pca.explained_variance_ratio_, pca.components_
-
-
-def dimension_reduction(
-    dataset: np.ndarray,
-    n_components: int = 3,
-) -> np.ndarray:
-    """Project the dataset onto *n_components* principal components.
-
-    Parameters
-    ----------
-    dataset : np.ndarray
-        Feature matrix of shape ``(N, d)``.
-    n_components : int
-        Number of principal components to keep.
-
-    Returns
-    -------
-    np.ndarray
-        Projected data of shape ``(N, n_components)``.
-    """
-    scaler = StandardScaler()
-    pca = PCA(n_components=n_components)
-    pipeline = make_pipeline(scaler, pca)
-    return pipeline.fit_transform(dataset)
-
-
-def passes_eigenvalue_filter(
-    eigen_values: np.ndarray,
-    feature_dim: int,
-    t0: float = 0.003,
-    t1: float = 3.0,
-) -> bool:
-    """Pre-filter: check if a polytope's eigenvalue spectrum is non-random.
-
-    A polytope passes the filter if at least ``t1`` eigenvalues exceed
-    the random baseline ``λ_base = 1/d`` by more than ``t0``.
-
-    The random baseline is ``1/d`` because for i.i.d. Bernoulli(½) features
-    after StandardScaler, each explained variance ratio ≈ 1/d.
-
-    Parameters
-    ----------
-    eigen_values : np.ndarray
-        Explained variance ratios from :func:`eigenvalue_decomposition`.
-    feature_dim : int
-        Total feature dimension ``d`` (= number of bits in the feature vector).
-        For R1 with polytope size k: ``d = 2(k+1) × WORD_SIZE``.
-    t0 : float
-        Eigenvalue excess threshold.
-    t1 : float
-        Minimum number of eigenvalues that must exceed the baseline.
-
-    Returns
-    -------
-    bool
-        ``True`` if the polytope passes the pre-filter.
-    """
-    lambda_base = 1.0 / feature_dim
-    num_exceeding = np.sum(eigen_values - lambda_base > t0)
-    return num_exceeding >= t1
-
-
 def EigenValueDecomposition(dataset, alg=None, title=None, visualize_ratio='no'):
     scaler = StandardScaler()
     pca = PCA()
@@ -123,3 +38,12 @@ def EigenValueDecomposition(dataset, alg=None, title=None, visualize_ratio='no')
         plt.show()
         plt.close()
     return pca.explained_variance_ratio_, pca.components_
+
+def DimensionReduction(dataset, n_components = 3, alg=None, title=None):
+    scaler = StandardScaler()
+    pca = PCA(n_components=n_components)
+    pipeline = make_pipeline(scaler, pca)
+    pipeline.fit(dataset)
+    pca_results = pca.fit_transform(dataset)
+    
+    return pca_results
