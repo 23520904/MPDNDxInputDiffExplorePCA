@@ -92,7 +92,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
         num_significant = np.sum(eigen_value - lambda_base > t0)
-                if num_significant >= t1:
+        if num_significant >= t1:
 
             try:
                 pca_results = pca_helper.DimensionReduction(
