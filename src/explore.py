@@ -78,18 +78,27 @@ def pdiff_number_to_difference(pdiff, wordsize=16):
     )
 
 
-def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=100000, hamming_weight=1, t0=0.003, t1=3, n_components=3, savepath=None):
+def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=100000, max_hamming_weight=1, t0=0.003, t1=3, n_components=3, max_iterations=5000, max_good_candidates=50,random_state=None, savepath=None):
+
+    # Thiết lập random_state để đảm bảo khả năng tái lập (reproducibility)
+    if random_state is not None:
+        random.seed(random_state)
+        np.random.seed(random_state)
+    
     pdiffs_num = set()
 
     lambda_base = 1/(4*blocksize) #1
 
-    num_idiff_cases =  calculate_combinations(blocksize,hamming_weight)
-    num_pdiff_cases = calculate_combinations(num_idiff_cases,3) #2
-    
-    
-    while len(pdiffs_num) < num_pdiff_cases:
-        pdiff_num1 = generate_polytope_diff_num(blocksize, hamming_weight, polytope_pool=pdiffs_num)
-        pdiff_num2 = generate_polytope_diff_num(blocksize, hamming_weight, polytope_pool=pdiffs_num)
+    good_candidates_found = 0
+
+    for iteration in range(max_iterations):
+        # Dừng sớm nếu đã thu thập đủ số lượng candidate tốt
+        if good_candidates_found >= max_good_candidates:
+            print(f"Đã tìm đủ {max_good_candidates} candidates tốt. Dừng thuật toán.")
+            break
+
+        pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight, polytope_pool=pdiffs_num)
+        pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight, polytope_pool=pdiffs_num)
         
         pdiff1 = pdiff_number_to_difference(pdiff_num1,wordsize)
         pdiff2 = pdiff_number_to_difference(pdiff_num2,wordsize)
@@ -128,6 +137,10 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                 )
 
                 elapsed_time = time.time() - start_time
+
+
+                # Tăng bộ đếm khi tìm được một candidate đạt chuẩn
+                good_candidates_found += 1
 
             except Exception as e:
                 print(f"[Warning] Skip candidate : {e}")
