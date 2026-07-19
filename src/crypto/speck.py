@@ -36,7 +36,7 @@ def enc_one_round(p,k):
 
 def expand_keys(k, t):
     ks = [0 for i in range(t)]
-    ks[0] = k[len(k) - 1]
+    ks[0] = k[len(k)-1]
     l = list(reversed(k[:len(k)-1]))
     for i in range(t-1):
         l[i%3], ks[i+1] = enc_one_round((l[i%3], ks[i]), i)

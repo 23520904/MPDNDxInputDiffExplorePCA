@@ -92,6 +92,12 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
         num_significant = np.sum(eigen_value - lambda_base > t0)
+
+        print(
+            f"candidate={len(pdiffs_num):5d} | "
+            f"max={eigen_value.max():.6f} | "
+            f"sig={num_significant}"
+        )
         if num_significant >= t1:
 
             try:
