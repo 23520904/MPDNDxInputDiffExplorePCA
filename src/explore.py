@@ -32,7 +32,7 @@ def generate_numbers_with_hamming_weight(bit_size = 32, hamming_weight = 1, numb
 def generate_polytope_diff_num(bit_size=32,
     max_hamming_weight=1,
     polytope_size=3,
-    polytope_pool=None,):
+    polytope_pool=None):
     if polytope_size <= 0:
         raise ValueError("polytope_size must be positive.")
     if max_hamming_weight <= 0 or max_hamming_weight > bit_size:
@@ -78,6 +78,8 @@ def pdiff_number_to_difference(pdiff, wordsize=16):
         for number in pdiff
     )
 
+def diff_hex(d):
+    return f"(0x{d[0]:04X}, 0x{d[1]:04X})"
 
 def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=100000, max_hamming_weight=1, t0=0.003, t1=3, n_components=3, max_iterations=5000, max_good_candidates=50,random_state=None, savepath=None):
 
@@ -86,7 +88,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         random.seed(random_state)
         np.random.seed(random_state)
     
-    pdiffs_num = set()
+    # pdiffs_num = set()
 
     lambda_base = 1/(4*blocksize) #1
 
@@ -98,8 +100,10 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
             print(f"Đã tìm đủ {max_good_candidates} candidates tốt. Dừng thuật toán.")
             break
 
-        pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight, polytope_pool=pdiffs_num)
-        pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight, polytope_pool=pdiffs_num)
+
+
+        pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight)
+        pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight)
         
         pdiff1 = pdiff_number_to_difference(pdiff_num1,wordsize)
         pdiff2 = pdiff_number_to_difference(pdiff_num2,wordsize)
@@ -157,8 +161,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
             # format polytope
             # ---------------------------------------------------------
 
-            def diff_hex(d):
-                return f"(0x{d[0]:04X}, 0x{d[1]:04X})"
+            
 
             polyA_hex = "[" + ", ".join(diff_hex(x) for x in pdiff1) + "]"
             hw_polyA = [hw(x) for x in pdiff_num1]
@@ -167,112 +170,112 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
             hw_polyB = [hw(x) for x in pdiff_num2]
 
             message = f"""
-================================================================================
-Candidate #{good_candidates_found}
-================================================================================
+            ================================================================================
+            Candidate #{good_candidates_found}
+            ================================================================================
 
-Time
-    {current_time}
+            Time
+                {current_time}
 
-Search Status
-    Iteration           : {iteration + 1:,}/{max_iterations:,}
-    Candidates Visited  : {len(pdiffs_num):,}
-    Good Candidates     : {good_candidates_found:,}/{max_good_candidates:,}
+            Search Status
+                Iteration           : {iteration + 1:,}/{max_iterations:,}
+                Candidates Visited  : {len(pdiffs_num):,}
+                Good Candidates     : {good_candidates_found:,}/{max_good_candidates:,}
 
---------------------------------------------------------------------------------
-Parameters
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Parameters
+            --------------------------------------------------------------------------------
 
-Rounds              : {nr}
-Dataset Size        : {datasize:,}
-Block Size          : {blocksize}
-Word Size           : {wordsize}
-Max Hamming Weight  : {max_hamming_weight}
-Random Seed          : {random_state if random_state is not None else "None"}
+            Rounds              : {nr}
+            Dataset Size        : {datasize:,}
+            Block Size          : {blocksize}
+            Word Size           : {wordsize}
+            Max Hamming Weight  : {max_hamming_weight}
+            Random Seed          : {random_state if random_state is not None else "None"}
 
-lambda_base         : {lambda_base:.8f}
-t0                  : {t0}
-t1                  : {t1}
+            lambda_base         : {lambda_base:.8f}
+            t0                  : {t0}
+            t1                  : {t1}
 
-PCA Components      : {n_components}
-KMeans Clusters     : {3 ** n_components}
+            PCA Components      : {n_components}
+            KMeans Clusters     : {3 ** n_components}
 
---------------------------------------------------------------------------------
-Polytope A
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Polytope A
+            --------------------------------------------------------------------------------
 
-Decimal
+            Decimal
 
-{pdiff1}
+            {pdiff1}
 
-HEX
+            HEX
 
-{polyA_hex}
+            {polyA_hex}
 
-Hamming Weight
+            Hamming Weight
 
-{hw_polyA}
+            {hw_polyA}
 
-Total HW             : {sum(hw_polyA)}
+            Total HW             : {sum(hw_polyA)}
 
---------------------------------------------------------------------------------
-Polytope B
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Polytope B
+            --------------------------------------------------------------------------------
 
-Decimal
+            Decimal
 
-{pdiff2}
+            {pdiff2}
 
-HEX
+            HEX
 
-{polyB_hex}
+            {polyB_hex}
 
-Hamming Weight
+            Hamming Weight
 
-{hw_polyB}
+            {hw_polyB}
 
-Total HW             : {sum(hw_polyB)}
+            Total HW             : {sum(hw_polyB)}
 
---------------------------------------------------------------------------------
-Dataset
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Dataset
+            --------------------------------------------------------------------------------
 
-Input Shape         : {data_speck.shape}
-PCA Shape           : {pca_results.shape}
+            Input Shape         : {data_speck.shape}
+            PCA Shape           : {pca_results.shape}
 
---------------------------------------------------------------------------------
-Eigenvalues
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Eigenvalues
+            --------------------------------------------------------------------------------
 
-All Eigenvalues
+            All Eigenvalues
 
-{np.round(eigen_value,6).tolist()}
+            {np.round(eigen_value,6).tolist()}
 
-Selected Index
+            Selected Index
 
-{selected_indices.tolist()}
+            {selected_indices.tolist()}
 
-Selected Eigenvalues
+            Selected Eigenvalues
 
-{np.round(selected_eigenvalues,6).tolist()}
+            {np.round(selected_eigenvalues,6).tolist()}
 
-Number Significant
+            Number Significant
 
-{int(num_significant)}
+            {int(num_significant)}
 
---------------------------------------------------------------------------------
-Clustering
---------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------
+            Clustering
+            --------------------------------------------------------------------------------
 
-Labels Shape        : {labels.shape}
+            Labels Shape        : {labels.shape}
 
-Silhouette Score    : {score:.6f}
+            Silhouette Score    : {score:.6f}
 
-Elapsed Time        : {elapsed_time:.3f} sec
+            Elapsed Time        : {elapsed_time:.3f} sec
 
-================================================================================
+            ================================================================================
 
-"""
+            """
 
             print(message)
 
@@ -301,35 +304,35 @@ Elapsed Time        : {elapsed_time:.3f} sec
                     if not file_exists:
 
                         writer.writerow([
-                "candidate",
-                "time",
-                "iteration",
-                "visited",
-                "round",
-                "datasize",
-                "blocksize",
-                "wordsize",
-                "max_hw",
-                "random_seed",
-                "polyA_hw",
-                "polyB_hw",
-                "polyA_total_hw",
-                "polyB_total_hw",
-                "lambda_base",
-                "t0",
-                "t1",
-                "pca_components",
-                "clusters",
-                "polyA_hex",
-                "polyB_hex",
-                "polyA_decimal",
-                "polyB_decimal",
-                "num_significant",
-                "selected_index",
-                "selected_eigenvalues",
-                "silhouette",
-                "elapsed_time"
-                        ])
+                        "candidate",
+                        "time",
+                        "iteration",
+                        "visited",
+                        "round",
+                        "datasize",
+                        "blocksize",
+                        "wordsize",
+                        "max_hw",
+                        "random_seed",
+                        "polyA_hw",
+                        "polyB_hw",
+                        "polyA_total_hw",
+                        "polyB_total_hw",
+                        "lambda_base",
+                        "t0",
+                        "t1",
+                        "pca_components",
+                        "clusters",
+                        "polyA_hex",
+                        "polyB_hex",
+                        "polyA_decimal",
+                        "polyB_decimal",
+                        "num_significant",
+                        "selected_index",
+                        "selected_eigenvalues",
+                        "silhouette",
+                        "elapsed_time"
+                                ])
 
                     writer.writerow([
                         good_candidates_found,
