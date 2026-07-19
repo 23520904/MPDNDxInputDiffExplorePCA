@@ -114,7 +114,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         num_significant = np.sum(eigen_value - lambda_base > t0)
 
         print(
-            f"visited={len(pdiffs_num):5d} | "
+            f"iteration={iteration + 1:5d} | "
             f"max={eigen_value.max():.6f} | "
             f"sig={num_significant}"
         )
@@ -179,7 +179,6 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
             Search Status
                 Iteration           : {iteration + 1:,}/{max_iterations:,}
-                Candidates Visited  : {len(pdiffs_num):,}
                 Good Candidates     : {good_candidates_found:,}/{max_good_candidates:,}
 
             --------------------------------------------------------------------------------
@@ -307,7 +306,6 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                         "candidate",
                         "time",
                         "iteration",
-                        "visited",
                         "round",
                         "datasize",
                         "blocksize",
@@ -338,7 +336,6 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                         good_candidates_found,
                         current_time,
                         iteration + 1,
-                        len(pdiffs_num),
                         nr,
                         datasize,
                         blocksize,
