@@ -9,7 +9,8 @@ from datetime import datetime
 import random
 import pandas as pd
 import numpy as np
-
+def hw(x):
+    return int(x).bit_count()
 def calculate_combinations(m, n):
     return math.factorial(m) // (math.factorial(n) * math.factorial(m - n))
 
@@ -109,7 +110,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         num_significant = np.sum(eigen_value - lambda_base > t0)
 
         print(
-            f"candidate={len(pdiffs_num):5d} | "
+            f"visited={len(pdiffs_num):5d} | "
             f"max={eigen_value.max():.6f} | "
             f"sig={num_significant}"
         )
@@ -160,18 +161,23 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                 return f"(0x{d[0]:04X}, 0x{d[1]:04X})"
 
             polyA_hex = "[" + ", ".join(diff_hex(x) for x in pdiff1) + "]"
+            hw_polyA = [hw(x) for x in pdiff_num1]
+
             polyB_hex = "[" + ", ".join(diff_hex(x) for x in pdiff2) + "]"
+            hw_polyB = [hw(x) for x in pdiff_num2]
 
             message = f"""
 ================================================================================
-Explore Polytope Candidate
+Candidate #{good_candidates_found}
 ================================================================================
 
 Time
     {current_time}
 
-Progress
-    {len(pdiffs_num):,} / {num_pdiff_cases:,}
+Search Status
+    Iteration           : {iteration + 1:,}/{max_iterations:,}
+    Candidates Visited  : {len(pdiffs_num):,}
+    Good Candidates     : {good_candidates_found:,}/{max_good_candidates:,}
 
 --------------------------------------------------------------------------------
 Parameters
@@ -181,7 +187,8 @@ Rounds              : {nr}
 Dataset Size        : {datasize:,}
 Block Size          : {blocksize}
 Word Size           : {wordsize}
-Hamming Weight      : {hamming_weight}
+Max Hamming Weight  : {max_hamming_weight}
+Random Seed          : {random_state if random_state is not None else "None"}
 
 lambda_base         : {lambda_base:.8f}
 t0                  : {t0}
@@ -202,6 +209,12 @@ HEX
 
 {polyA_hex}
 
+Hamming Weight
+
+{hw_polyA}
+
+Total HW             : {sum(hw_polyA)}
+
 --------------------------------------------------------------------------------
 Polytope B
 --------------------------------------------------------------------------------
@@ -213,6 +226,12 @@ Decimal
 HEX
 
 {polyB_hex}
+
+Hamming Weight
+
+{hw_polyB}
+
+Total HW             : {sum(hw_polyB)}
 
 --------------------------------------------------------------------------------
 Dataset
@@ -282,38 +301,51 @@ Elapsed Time        : {elapsed_time:.3f} sec
                     if not file_exists:
 
                         writer.writerow([
-                            "time",
-                            "visited",
-                            "round",
-                            "datasize",
-                            "blocksize",
-                            "wordsize",
-                            "hw",
-                            "lambda_base",
-                            "t0",
-                            "t1",
-                            "pca_components",
-                            "clusters",
-                            "polyA_hex",
-                            "polyB_hex",
-                            "polyA_decimal",
-                            "polyB_decimal",
-                            "num_significant",
-                            "selected_index",
-                            "selected_eigenvalues",
-                            "all_eigenvalues",
-                            "silhouette",
-                            "elapsed_time"
+                "candidate",
+                "time",
+                "iteration",
+                "visited",
+                "round",
+                "datasize",
+                "blocksize",
+                "wordsize",
+                "max_hw",
+                "random_seed",
+                "polyA_hw",
+                "polyB_hw",
+                "polyA_total_hw",
+                "polyB_total_hw",
+                "lambda_base",
+                "t0",
+                "t1",
+                "pca_components",
+                "clusters",
+                "polyA_hex",
+                "polyB_hex",
+                "polyA_decimal",
+                "polyB_decimal",
+                "num_significant",
+                "selected_index",
+                "selected_eigenvalues",
+                "silhouette",
+                "elapsed_time"
                         ])
 
                     writer.writerow([
+                        good_candidates_found,
                         current_time,
+                        iteration + 1,
                         len(pdiffs_num),
                         nr,
                         datasize,
                         blocksize,
                         wordsize,
-                        hamming_weight,
+                        max_hamming_weight,
+                        random_state,
+                        ";".join(map(str, hw_polyA)),
+                        ";".join(map(str, hw_polyB)),
+                        sum(hw_polyA),
+                        sum(hw_polyB),
                         lambda_base,
                         t0,
                         t1,
@@ -326,7 +358,6 @@ Elapsed Time        : {elapsed_time:.3f} sec
                         int(num_significant),
                         ";".join(map(str, selected_indices)),
                         ";".join(f"{x:.8f}" for x in selected_eigenvalues),
-                        ";".join(f"{x:.8f}" for x in eigen_value),
                         score,
                         elapsed_time
                     ])
