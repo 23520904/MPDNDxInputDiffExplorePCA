@@ -29,22 +29,28 @@ def generate_numbers_with_hamming_weight(bit_size = 32, hamming_weight = 1, numb
             return number
 
 def generate_polytope_diff_num(bit_size=32,
-    hamming_weight=1,
+    max_hamming_weight=1,
     polytope_size=3,
     polytope_pool=None,):
     if polytope_size <= 0:
         raise ValueError("polytope_size must be positive.")
-    
+    if max_hamming_weight <= 0 or max_hamming_weight > bit_size:
+        raise ValueError("Invalid max_hamming_weight.")
     while True:
 
         local_pool = []
 
         polytope = []
-
+        weights = [1 / i for i in range(1, max_hamming_weight + 1)]
         for _ in range(polytope_size):
+            hw = random.choices(
+                range(1, max_hamming_weight + 1),
+                weights=weights,
+                k=1,
+            )[0]
             diff =  generate_numbers_with_hamming_weight(
                 bit_size=bit_size,
-                hamming_weight=hamming_weight,
+                hamming_weight=hw,
                 number_pool=local_pool,
             )
 
