@@ -57,7 +57,7 @@ def generate_polytope_diff_num(bit_size=32,
 
             polytope.append(diff)
         # canonical representation
-        polytope = tuple(sorted(polytope))
+        polytope = tuple(polytope)
 
         if polytope_pool is None:
             return polytope
