@@ -505,6 +505,6 @@ def explore_polytope_differences_using_pndc_mtd(blocksize=32, wordsize=16, nr=5,
                         ";".join(map(str, selected_indices)),
                         ";".join(f"{x:.8f}" for x in selected_eigenvalues),
                         score,
-                        np.max(selected_eigenvalues) / lambda_base if lambda_base != 0 else 0,
+                        eigen_value.max(),
                         elapsed_time
                     ])
