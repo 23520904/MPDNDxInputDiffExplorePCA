@@ -106,7 +106,8 @@ def make_train_data(n, nr, a=((0x0040,0x0), (0x0,0x8000), (0x0060,0x0)), b=((0x0
     return XT,Y  
 
 
-def speck_encrypt_wrapper(P, K, nr):
+
+def encrypt_wrapper(P, K, nr):
     """
     Hàm bọc xử lý mảng bit (bit-array) từ Data Generator, tương thích CPU/GPU.
     P: mảng bit shape (N, 32)
