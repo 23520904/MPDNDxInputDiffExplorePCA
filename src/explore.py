@@ -270,7 +270,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                         "selected_index",
                         "selected_eigenvalues",
                         "silhouette",
-                        "max_eigen_ratio"
+                        "max_eigen_ratio",
                         "elapsed_time"
                                 ])
 
@@ -474,7 +474,7 @@ def explore_polytope_differences_using_pndc_mtd(blocksize=32, wordsize=16, nr=5,
                         "selected_index",
                         "selected_eigenvalues",
                         "silhouette",
-                        "max_eigen_ratio"
+                        "max_eigen_ratio",
                         "elapsed_time"
                                 ])
 
