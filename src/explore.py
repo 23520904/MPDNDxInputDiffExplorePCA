@@ -138,7 +138,10 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
         print(
             f"iteration={iteration + 1:5d} | "
             f"max={eigen_value.max():.6f} | "
-            f"sig={num_significant}"
+            f"sig={num_significant}\n"
+            f"lambda_base={lambda_base:.6f} |"
+            f"data_speck.shape={data_speck.shape} |"
+            f"sum(eigen_value)={np.sum(eigen_value):.6f}"
         )
         if num_significant >= t1:
 
@@ -322,27 +325,27 @@ def explore_polytope_differences_using_pndc_mtd(blocksize=32, wordsize=16, nr=5,
             print(f"Đã tìm đủ {max_good_candidates} candidates tốt. Dừng thuật toán.")
             break
 
-
-
         pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight) 
         pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight) 
+        
+        
+        pdiff1 = pdiff_number_to_difference(pdiff_num1, wordsize)
+        pdiff2 = pdiff_number_to_difference(pdiff_num2, wordsize)
         
         data_speck,Y = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
         
         lambda_base = 1/data_speck.shape[1]
 
-        pdiff1 = pdiff_number_to_difference(pdiff_num1, wordsize)
-        pdiff2 = pdiff_number_to_difference(pdiff_num2, wordsize)
-
-
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
         num_significant = np.sum(eigen_value - lambda_base > t0)
-
 
         print(
             f"iteration={iteration + 1:5d} | "
             f"max={eigen_value.max():.6f} | "
-            f"sig={num_significant}"
+            f"sig={num_significant}\n"
+            f"lambda_base={lambda_base:.6f} |"
+            f"data_speck.shape={data_speck.shape} |"
+            f"sum(eigen_value)={np.sum(eigen_value):.6f}"
         )
         if num_significant >= t1:
 
