@@ -90,7 +90,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
     
     # pdiffs_num = set()
 
-    lambda_base = 1/(4*blocksize) #1 ??
+    
 
     good_candidates_found = 0
 
@@ -114,7 +114,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
             pos_deltas=pos_deltas,
             neg_deltas=neg_deltas,
             plain_bits=blocksize,
-            key_bits=2*blocksize,
+            key_bits=64,
             nr=nr,
             n_samples=datasize,
             batch_size=datasize,  # Generate all data in one batch
@@ -125,12 +125,15 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
         data_speck, Y = data_generator[0]  # Get the entire dataset in one batch
         
+        lambda_base = 1/data_speck.shape[1]
+
         pdiff1 = pdiff_number_to_difference(pdiff_num1, wordsize)
         pdiff2 = pdiff_number_to_difference(pdiff_num2, wordsize)
 
 
         eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
         num_significant = np.sum(eigen_value - lambda_base > t0)
+
 
         print(
             f"iteration={iteration + 1:5d} | "
