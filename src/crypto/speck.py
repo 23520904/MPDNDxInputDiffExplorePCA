@@ -1,3 +1,7 @@
+
+
+
+    
 import numpy as np
 from os import urandom
 
@@ -99,4 +103,11 @@ def make_train_data(n, nr, a=((0x0040,0x0), (0x0,0x8000), (0x0060,0x0)), b=((0x0
 
     XT = convert_to_binary(X,s_groups=s_groups)
 
-    return XT,Y
+    return XT,Y  
+
+def encrypt_wrapper(P, K, nr):
+    # Bước 1: Mở rộng khóa chính (Master Key) thành mảng khóa con (Round keys)
+    ks = expand_keys(K, nr)
+    
+    # Bước 2: Mã hóa bản rõ với mảng khóa con và trả về kết quả
+    return encryption(P, ks)

@@ -18,7 +18,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-
+import matplotlib.pyplot as plt
 
 def EigenValueDecomposition(dataset, alg=None, title=None, visualize_ratio='no'):
     scaler = StandardScaler()

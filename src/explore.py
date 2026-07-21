@@ -7,8 +7,8 @@ import math
 import time
 from datetime import datetime
 import random
-import pandas as pd
 import numpy as np
+import utils.make_data_train_polyhedral_multipair_format as make_data
 def hw(x):
     return int(x).bit_count()
 def calculate_combinations(m, n):
@@ -90,7 +90,7 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
     
     # pdiffs_num = set()
 
-    lambda_base = 1/(4*blocksize) #1
+    lambda_base = 1/(4*blocksize) #1 ??
 
     good_candidates_found = 0
 
@@ -102,15 +102,34 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
 
 
 
-        pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight)
-        pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight)
+        pdiff_num1 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight) 
+        pdiff_num2 = generate_polytope_diff_num(blocksize, max_hamming_weight=max_hamming_weight) 
         
-        pdiff1 = pdiff_number_to_difference(pdiff_num1,wordsize)
-        pdiff2 = pdiff_number_to_difference(pdiff_num2,wordsize)
         
-        data_speck,Y = speck.make_train_data(datasize, nr, pdiff1,pdiff2)
+        pos_deltas = [(d, 0) for d in pdiff_num1]
+        neg_deltas = [(d, 0) for d in pdiff_num2]
+        
+        data_generator = make_data.PolyhedralMultiPairGenerator(
+            encryption_function=speck.encrypt_wrapper,
+            pos_deltas=pos_deltas,
+            neg_deltas=neg_deltas,
+            plain_bits=blocksize,
+            key_bits=2*blocksize,
+            nr=nr,
+            n_samples=datasize,
+            batch_size=datasize,  # Generate all data in one batch
+            start_idx=0,
+            use_gpu=True,
+            to_float32=True,  # Convert data to float32 for PCA
+        )
 
-        eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck)
+        data_speck, Y = data_generator[0]  # Get the entire dataset in one batch
+        
+        pdiff1 = pdiff_number_to_difference(pdiff_num1, wordsize)
+        pdiff2 = pdiff_number_to_difference(pdiff_num2, wordsize)
+
+
+        eigen_value, eigen_vector = pca_helper.EigenValueDecomposition(dataset=data_speck, visualize_ratio='yes')
         num_significant = np.sum(eigen_value - lambda_base > t0)
 
         print(
@@ -170,111 +189,27 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
             hw_polyB = [hw(x) for x in pdiff_num2]
 
             message = f"""
-            ================================================================================
-            Candidate #{good_candidates_found}
-            ================================================================================
+================================================================================
+[+] CANDIDATE #{good_candidates_found}/{max_good_candidates} FOUND | ITERATION: {iteration + 1:,}/{max_iterations:,}
+================================================================================
+> Search Speed      : {elapsed_time:.3f} sec | Time: {current_time}
 
-            Time
-                {current_time}
+[1. CLUSTERING QUALITY EVALUATION]
+- Silhouette Score  : {score:.6f}  <-- Critical metric (Closer to 1 is better)
 
-            Search Status
-                Iteration           : {iteration + 1:,}/{max_iterations:,}
-                Good Candidates     : {good_candidates_found:,}/{max_good_candidates:,}
+[2. PCA FEATURES EVALUATION (Tune t0 & t1)]
+- Configuration     : Requires t1={t1} components exceeding t0={t0}
+- Actual Result     : Found {int(num_significant)} significant components
+- Max Eigenvalue    : {np.max(selected_eigenvalues):.6f} (Max deviation from lambda_base)
+- Selected Axes     : {np.round(selected_eigenvalues, 6).tolist()}
 
-            --------------------------------------------------------------------------------
-            Parameters
-            --------------------------------------------------------------------------------
-
-            Rounds              : {nr}
-            Dataset Size        : {datasize:,}
-            Block Size          : {blocksize}
-            Word Size           : {wordsize}
-            Max Hamming Weight  : {max_hamming_weight}
-            Random Seed          : {random_state if random_state is not None else "None"}
-
-            lambda_base         : {lambda_base:.8f}
-            t0                  : {t0}
-            t1                  : {t1}
-
-            PCA Components      : {n_components}
-            KMeans Clusters     : {3 ** n_components}
-
-            --------------------------------------------------------------------------------
-            Polytope A
-            --------------------------------------------------------------------------------
-
-            Decimal
-
-            {pdiff1}
-
-            HEX
-
-            {polyA_hex}
-
-            Hamming Weight
-
-            {hw_polyA}
-
-            Total HW             : {sum(hw_polyA)}
-
-            --------------------------------------------------------------------------------
-            Polytope B
-            --------------------------------------------------------------------------------
-
-            Decimal
-
-            {pdiff2}
-
-            HEX
-
-            {polyB_hex}
-
-            Hamming Weight
-
-            {hw_polyB}
-
-            Total HW             : {sum(hw_polyB)}
-
-            --------------------------------------------------------------------------------
-            Dataset
-            --------------------------------------------------------------------------------
-
-            Input Shape         : {data_speck.shape}
-            PCA Shape           : {pca_results.shape}
-
-            --------------------------------------------------------------------------------
-            Eigenvalues
-            --------------------------------------------------------------------------------
-
-            All Eigenvalues
-
-            {np.round(eigen_value,6).tolist()}
-
-            Selected Index
-
-            {selected_indices.tolist()}
-
-            Selected Eigenvalues
-
-            {np.round(selected_eigenvalues,6).tolist()}
-
-            Number Significant
-
-            {int(num_significant)}
-
-            --------------------------------------------------------------------------------
-            Clustering
-            --------------------------------------------------------------------------------
-
-            Labels Shape        : {labels.shape}
-
-            Silhouette Score    : {score:.6f}
-
-            Elapsed Time        : {elapsed_time:.3f} sec
-
-            ================================================================================
-
-            """
+[3. POLYTOPE DIFFERENCES DETAILS (Tune Max HW={max_hamming_weight})]
+- Polytope 1 (HEX)  : {polyA_hex}
+  -> HW Distribution: {hw_polyA} (Total HW: {sum(hw_polyA)})
+- Polytope 2 (HEX)  : {polyB_hex} 
+  -> HW Distribution: {hw_polyB} (Total HW: {sum(hw_polyB)})
+--------------------------------------------------------------------------------
+"""
 
             print(message)
 
@@ -361,18 +296,3 @@ def explore_polytope_differences(blocksize=32, wordsize=16, nr=5, datasize=10000
                         score,
                         elapsed_time
                     ])
-
-
-
-
-
-
-        
-        
-        
-
-
-        
-
-
-    
