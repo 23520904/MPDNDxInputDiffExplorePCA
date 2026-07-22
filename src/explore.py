@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import random
 import numpy as np
-import utils.make_data_train_polyhedral_multipair_format as make_data
+import src.utils.PolyhedralMultiPairGenerator as make_data
 def hw(x):
     return int(x).bit_count()
 def calculate_combinations(m, n):

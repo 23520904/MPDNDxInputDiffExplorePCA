@@ -19,14 +19,17 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
 import data
 import model as model_module
-
+import utils.PolyhedralMultiPairGenerator as pmpg
 logging.basicConfig(level=logging.FATAL)
 
+import speck32.cipher as speck
 ABORT_TRAINING_BELOW_ACC = 0.505  # stop staged training once val accuracy drops to/below this
 EPOCHS = 120
 NUM_SAMPLES = 10 ** 7
 NUM_VAL_SAMPLES = 10 ** 6
 BATCH_SIZE = 10000
+POS_DELTAS = [(16384, 0), (0, 128), (32, 0)]
+NEG_DELTAS = [(32, 0), (0, 1056), (0, 1026)]
 
 
 def cyclic_lr(num_epochs, high_lr, low_lr):
@@ -89,7 +92,7 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
 
     with strategy.scope():
         if model_name == 'model':
-            model = model_module.make_model(2 * input_size)
+            model = model_module.make_model(input_size)
             optimizer = tf.keras.optimizers.Adam(amsgrad=True)
             model.compile(optimizer=optimizer, loss='mse', metrics=['acc'])
 
@@ -136,17 +139,30 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
 def train_neural_distinguishers(output_dir, starting_round, epochs=None, nets=('model',), num_samples=None):
     """Train each net in `nets` starting from `starting_round`; append results
     to `output_dir/results.txt`."""
-    plain_bits = 64
+    plain_bits = 32
+    input_size= 2 * 3 * plain_bits
     word_size = 16
     results = {}
-
+    generator = lambda n, nr: pmpg.PolyhedralMultiPairGenerator(
+                encryption_function=speck.encrypt_wrapper,
+                pos_deltas=POS_DELTAS,
+                neg_deltas=NEG_DELTAS,
+                plain_bits=plain_bits,
+                key_bits=64,
+                nr=nr,
+                n_samples=n,
+                batch_size= max(1, n // 100),
+                start_idx=0,
+                use_gpu=True
+            )[0]
+    
     for net in nets:
         print(f'Training {net} starting from round {starting_round}...')
         best_round, best_val_acc = train_neural_distinguisher(
             starting_round=starting_round,
-            data_generator=lambda num_samples, nr: data.make_train_data(num_samples, nr),
+            data_generator=generator,
             model_name=net,
-            input_size=plain_bits,
+            input_size=input_size,
             word_size=word_size,
             log_prefix=output_dir,
             _epochs=epochs,

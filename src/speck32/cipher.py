@@ -5,6 +5,9 @@ are specific to the 32/64 parameter set. For SIMON32/SIMECK32 you'll want a
 sibling module with the same shape (encrypt/decrypt/expand_keys) rather than
 extending this one.
 """
+import numpy as np
+from os import urandom
+
 WORD_SIZE = 16
 ALPHA = 7
 BETA = 2
@@ -78,6 +81,57 @@ def check_testvector():
     print("Testvector verified." if ok else "Testvector not verified.")
     return ok
 
+def encryption(p, ks):
+    x, y = p[0], p[1]
+    for k in ks:
+        x,y = enc_one_round((x,y), k)
+    return(x, y)
+
+POWERS16 = np.array(
+    [1<<i for i in range(15,-1,-1)],
+    dtype=np.uint16
+)
+def encrypt_wrapper(P, K, nr):
+    """
+    Hàm bọc xử lý mảng bit (bit-array) từ Data Generator, tương thích CPU/GPU.
+    P: mảng bit shape (N, 32)
+    K: mảng bit shape (N, 64)
+    """
+    # 1. Tự động nhận diện thư viện đang dùng là GPU (cupy) hay CPU (numpy)
+    try:
+        import cupy as cp
+        lib = cp.get_array_module(P)
+    except Exception:
+        import numpy as lib
+        
+    # Ép kiểu dữ liệu về số nguyên 32-bit (tránh lỗi trôi dạt dấu phẩy động hoặc tràn bộ nhớ)
+    P = P.astype(lib.uint32)
+    K = K.astype(lib.uint32)
+        
+    # 2. KHÔI PHỤC BIT ARRAY VỀ KHỐI SỐ NGUYÊN (16-bit words)
+    # Sử dụng nhân ma trận với lũy thừa của 2 để ghép 16 bit thành 1 số nguyên cực nhanh
+    
+    p_left  = lib.dot(P[:, :16], POWERS16).astype(lib.uint16)
+    p_right = lib.dot(P[:, 16:], POWERS16).astype(lib.uint16)
+    p_tuple = (p_left, p_right)
+    
+    k3 = lib.dot(K[:, :16], POWERS16)
+    k2 = lib.dot(K[:, 16:32], POWERS16)
+    k1 = lib.dot(K[:, 32:48], POWERS16)
+    k0 = lib.dot(K[:, 48:], POWERS16)
+    k_list = [k3, k2, k1, k0]
+    
+    # 3. GỌI HÀM MÃ HÓA GỐC CỦA BẠN
+    ks = expand_keys(k_list, nr)
+    c_left, c_right = encryption(p_tuple, ks)
+    
+    # 4. TÁCH SỐ NGUYÊN (CIPHERTEXT) TRỞ LẠI THÀNH BIT ARRAY ĐỂ TRẢ VỀ
+    C_bits = lib.zeros(P.shape, dtype=lib.uint8)
+    for i in range(16):
+        C_bits[:, 15 - i] = (c_left >> i) & 1
+        C_bits[:, 31 - i] = (c_right >> i) & 1
+        
+    return C_bits
 
 if __name__ == '__main__':
     check_testvector()
