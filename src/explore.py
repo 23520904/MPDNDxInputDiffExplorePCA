@@ -8,9 +8,9 @@ import time
 from datetime import datetime
 import random
 import numpy as np
-import src.utils.PolyhedralMultiPairGenerator as make_data
+import utils.PolyhedralMultiPairGenerator as make_data
 import importlib
-import src.utils.PolytopicQadrupleGenerator as make_quad_data
+import utils.PolytopicQadrupleGenerator as make_quad_data
 
 def hw(x):
     return int(x).bit_count()

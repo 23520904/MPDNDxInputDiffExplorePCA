@@ -143,4 +143,3 @@ def make_diff_data(n, nr, a=DEFAULT_A, b=DEFAULT_B, s_groups=1):
     return convert_to_binary(X), Y
 
 
-def make_train_data(pos_deltas,neg_deltas,)
