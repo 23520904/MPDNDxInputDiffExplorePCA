@@ -1,5 +1,5 @@
 """
-PolytopicQuadrupleGeneratorV2
+PolytopicQuadrupleGenerator
 ===============================
 
 Advanced variant of `PolytopicQuadrupleGenerator` that combines two ideas:
@@ -111,7 +111,7 @@ def _safe_encrypt(enc_fn, P, K, nr):
             return enc_fn(P, K, nr)
 
 
-class PolytopicQuadrupleGeneratorV2(Sequence):
+class PolytopicQuadrupleGenerator(Sequence):
     """
     Same polytope/quadruple data-generation as `PolytopicQuadrupleGenerator`
     (Algorithm 1 / 2 of the polytopic-NDC paper), with an additional
