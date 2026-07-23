@@ -14,6 +14,8 @@ import numpy as np
 from os import urandom
 
 import cipher
+import utils.PolytopicQadrupleGenerator as pqg
+
 
 # Defaults from Gohr's original SPECK32/64 distinguisher (3 extra pairs).
 DEFAULT_A = ((0x0040, 0x0), (0x0, 0x8000), (0x0060, 0x0))
@@ -59,20 +61,24 @@ def convert_to_binary(word_arrays):
     return X.transpose()
 
 
-def make_train_data(n, nr, a=DEFAULT_A, b=DEFAULT_B, s_groups=1):
-    """Fixed-key data: base ciphertext pair + one extra pair per difference in a/b."""
-    Y = _random_labels(n)
-    key = _random_keys(n)
-    round_keys = cipher.expand_keys(key, nr)
+def make_train_data(n, nr, a=DEFAULT_A, b=DEFAULT_B, related_key=False, feature_mode='diff', use_gpu=True, to_float32=True):
+    """Fixed-key / Polytopic Quadruple data generator using PolytopicQuadrupleGenerator."""
+    generator = pqg.PolytopicQuadrupleGenerator(
+        encryption_function=cipher.encrypt_wrapper,
+        plain_bits=32,
+        key_bits=64,
+        nr=nr,
+        pos_diffs=a,
+        neg_diffs=b,
+        related_key=related_key,
+        feature_mode=feature_mode,
+        n_samples=n,
+        batch_size=n,
+        use_gpu=use_gpu,
+        to_float32=to_float32
+    )
+    return generator[0]
 
-    X = []
-    for _ in range(s_groups):
-        plain_1, plain_2 = _random_words(n), _random_words(n)
-        X.extend(cipher.encrypt((plain_1, plain_2), round_keys))
-        for p_1, p_2 in _diff_pairs(plain_1, plain_2, Y, a, b):
-            X.extend(cipher.encrypt((p_1, p_2), round_keys))
-
-    return convert_to_binary(X), Y
 
 
 def make_train_rkdata(n, nr, a=DEFAULT_A, b=DEFAULT_B, s_groups=1):

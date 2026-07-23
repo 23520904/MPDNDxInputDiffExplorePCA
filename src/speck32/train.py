@@ -11,6 +11,7 @@ warnings.filterwarnings("ignore")
 
 import argparse
 import logging
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -19,7 +20,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
 import data
 import model as model_module
-import utils.PolyhedralMultiPairGenerator as pmpg
+import utils.PolytopicQadrupleGenerator as pqg
 logging.basicConfig(level=logging.FATAL)
 
 import speck32.cipher as speck
@@ -136,28 +137,39 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     return best_round, best_val_acc
 
 
-def train_neural_distinguishers(output_dir, starting_round, epochs=None, nets=('model',), num_samples=None):
+
+def train_neural_distinguishers(output_dir='results', starting_round=5, epochs=None, nets=('model',), num_samples=None, feature_mode='full'):
     """Train each net in `nets` starting from `starting_round`; append results
     to `output_dir/results.txt`."""
+    if feature_mode is None:
+        feature_mode = 'full'
+
     plain_bits = 32
-    input_size= 2 * 3 * plain_bits
+    if feature_mode == 'raw':
+        input_size = 4 * plain_bits
+    elif feature_mode == 'diff':
+        input_size = 3 * plain_bits
+    else:  # 'full'
+        input_size = 7 * plain_bits
+
     word_size = 16
     results = {}
-    generator = lambda n, nr: pmpg.PolyhedralMultiPairGenerator(
+    generator = lambda n, nr: pqg.PolytopicQuadrupleGenerator(
                 encryption_function=speck.encrypt_wrapper,
-                pos_deltas=POS_DELTAS,
-                neg_deltas=NEG_DELTAS,
+                pos_diffs=POS_DELTAS,
+                neg_diffs=NEG_DELTAS,
                 plain_bits=plain_bits,
                 key_bits=64,
                 nr=nr,
                 n_samples=n,
-                batch_size= max(1, n // 100),
-                start_idx=0,
-                use_gpu=True
+                batch_size=max(1, n // 100),
+                feature_mode=feature_mode,
+                use_gpu=True,
+                to_float32=True
             )[0]
     
     for net in nets:
-        print(f'Training {net} starting from round {starting_round}...')
+        print(f'Training {net} starting from round {starting_round} (feature_mode={feature_mode}, input_size={input_size})...')
         best_round, best_val_acc = train_neural_distinguisher(
             starting_round=starting_round,
             data_generator=generator,
@@ -182,15 +194,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Obtain good input differences for neural cryptanalysis.')
     parser.add_argument('-o', '--output', type=str, nargs='?', default='results',
                          help='the folder where to store the experiment results')
+    parser.add_argument('-f', '--feature_mode', type=str, choices=['full', 'diff', 'raw'], default='full',
+                         help='feature mode for PolytopicQuadrupleGenerator (default: full)')
     args, _unknown = parser.parse_known_args()
     os.makedirs(args.output, exist_ok=True)
-    return args.output
+    return args
 
 
 def main():
-    output_dir = parse_args()
-    train_neural_distinguishers(output_dir, 5, nets=['model'])
+    args = parse_args()
+    train_neural_distinguishers(output_dir=args.output, starting_round=5, nets=['model'], feature_mode=args.feature_mode)
 
 
 if __name__ == '__main__':
-    main()
+    main()
