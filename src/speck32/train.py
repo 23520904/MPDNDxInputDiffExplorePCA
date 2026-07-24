@@ -60,10 +60,10 @@ def train_one_round(model, X, Y, X_val, Y_val, round_number, epochs=40,
     """
     if load_weight_file:
         logging.info("loading weights from previous round...")
-        model.load_weights(f'{log_prefix}_{model_name}_round{round_number - 1}.h5')
+        model.load_weights(os.path.join(log_prefix, f'{model_name}_round{round_number - 1}.h5'))
 
     checkpoint = ModelCheckpoint(
-        f'{log_prefix}_{model_name}_round{round_number}.h5',
+        os.path.join(log_prefix, f'{model_name}_round{round_number}.h5'),
         monitor='val_loss', save_best_only=True,
     )
     callbacks = [checkpoint]
@@ -75,7 +75,7 @@ def train_one_round(model, X, Y, X_val, Y_val, round_number, epochs=40,
         validation_data=(X_val, Y_val), callbacks=callbacks, verbose=1,
     )
 
-    pd.to_pickle(history.history, f'{log_prefix}_{model_name}_training_history_round{round_number}.pkl')
+    pd.to_pickle(history.history, os.path.join(log_prefix, f'{model_name}_training_history_round{round_number}.pkl'))
     return np.max(history.history['val_acc'])
 
 
@@ -186,6 +186,7 @@ def train_neural_distinguishers(output_dir='results', starting_round=5, epochs=N
         )
         results[net] = {'Best round': best_round, 'Validation accuracy': best_val_acc}
 
+    os.makedirs(output_dir, exist_ok=True)
     results_file_path = os.path.join(output_dir, 'results.txt')
     with open(results_file_path, 'a') as f:
         for net in nets:
