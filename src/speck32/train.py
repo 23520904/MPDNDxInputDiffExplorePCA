@@ -91,12 +91,6 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     lr = cyclic_lr(10, 0.001, 0.0002)
     strategy = get_strategy()
 
-    with strategy.scope():
-        if model_name == 'model':
-            model = model_module.make_model(input_size)
-            optimizer = tf.keras.optimizers.Adam(amsgrad=True)
-            model.compile(optimizer=optimizer, loss='mse', metrics=['acc'])
-
     current_round = starting_round
     load_weight_file = False
     best_val_acc = None
@@ -104,8 +98,16 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     epochs = _epochs if _epochs is not None else EPOCHS
     num_samples = _num_samples if _num_samples is not None else NUM_SAMPLES
 
+    import gc
+
     print(f'Training on {epochs} epochs ...')
     while True:
+        with strategy.scope():
+            if model_name == 'model':
+                model = model_module.make_model(input_size)
+                optimizer = tf.keras.optimizers.Adam(amsgrad=True)
+                model.compile(optimizer=optimizer, loss='mse', metrics=['acc'])
+
         logging.info(
             f"CREATE CIPHER DATA for round {current_round} "
             f"(training samples={num_samples:.0e}, validation samples={NUM_VAL_SAMPLES:.0e})..."
@@ -132,7 +134,9 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
         current_round += 1
 
         del X, Y, X_val, Y_val
+        del model
         tf.keras.backend.clear_session()
+        gc.collect()
 
     return best_round, best_val_acc
 

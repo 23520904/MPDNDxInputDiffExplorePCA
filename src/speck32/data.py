@@ -13,7 +13,7 @@ just pass longer a/b tuples.
 import numpy as np
 from os import urandom
 
-import cipher
+import speck32.cipher
 import utils.PolytopicQadrupleGenerator as pqg
 
 
