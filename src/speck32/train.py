@@ -18,8 +18,8 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
-import data
-import model as model_module
+import speck32.data
+import speck32.model as model_module
 import utils.PolytopicQadrupleGenerator as pqg
 logging.basicConfig(level=logging.FATAL)
 
@@ -207,4 +207,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main()
