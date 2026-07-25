@@ -38,8 +38,13 @@ def get_strategy():
     return tf.distribute.OneDeviceStrategy(device='/gpu:0') if gpus else tf.distribute.get_strategy()
 
 def train_one_round(model, train_ds, val_ds, round_number, epochs=40, model_name='model', load_weight_file=False, log_prefix='', lr_scheduler=None, steps_per_epoch=None, validation_steps=None):
-    if load_weight_file and os.path.exists(os.path.join(log_prefix, f'{model_name}_round{round_number - 1}.h5')):
-        model.load_weights(os.path.join(log_prefix, f'{model_name}_round{round_number - 1}.h5'))
+    if load_weight_file and round_number > 1:
+        prev_weight_file = os.path.join(log_prefix, f'{model_name}_round{round_number - 1}.h5')
+        if os.path.exists(prev_weight_file):
+            print(f'Loading previous weights:\n{os.path.abspath(prev_weight_file)}')
+            model.load_weights(prev_weight_file)
+        else:
+            print('No previous checkpoint found.\nTraining from scratch.')
 
     checkpoint = ModelCheckpoint(os.path.join(log_prefix, f'{model_name}_round{round_number}.h5'), monitor='val_loss', save_best_only=True)
     callbacks = [checkpoint]
@@ -53,7 +58,11 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     lr = cyclic_lr(10, 0.001, 0.0002)
     strategy = get_strategy()
     current_round = starting_round
-    load_weight_file = False
+    prev_weight_file = os.path.join(
+        log_prefix,
+        f"{model_name}_round{current_round - 1}.h5"
+    )
+    load_weight_file = os.path.exists(prev_weight_file)
     best_val_acc = 0
     best_round = starting_round
     epochs = _epochs if _epochs is not None else EPOCHS
