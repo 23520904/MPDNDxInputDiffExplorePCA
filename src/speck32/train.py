@@ -33,6 +33,8 @@ def cyclic_lr(num_epochs, high_lr, low_lr):
 
 def get_strategy():
     gpus = tf.config.list_physical_devices('GPU')
+    if len(gpus) > 1:
+        return tf.distribute.MirroredStrategy()
     return tf.distribute.OneDeviceStrategy(device='/gpu:0') if gpus else tf.distribute.get_strategy()
 
 def train_one_round(model, train_ds, val_ds, round_number, epochs=40, model_name='model', load_weight_file=False, log_prefix='', lr_scheduler=None, steps_per_epoch=None, validation_steps=None):
