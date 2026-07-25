@@ -131,7 +131,7 @@ def train_neural_distinguishers(output_dir='results', starting_round=1, epochs=N
             )
         )
         
-        # Prefetch next batch while GPU trains current batch, and return steps
-        return dataset.prefetch(tf.data.AUTOTUNE), len(gen)
+        # Repeat dataset indefinitely for multiple epochs, prefetch next batch while GPU trains
+        return dataset.repeat().prefetch(tf.data.AUTOTUNE), len(gen)
 
     return train_neural_distinguisher(starting_round, generator, 'model', input_size, output_dir, epochs, num_samples)
