@@ -71,11 +71,14 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     while True:
         with strategy.scope():
             model = model_module.make_model(input_size)
+            # XLA (jit_compile=True) is incompatible with MirroredStrategy + Mixed Precision's LossScaleOptimizer 
+            # because XLA does not support conditional cross-replica synchronization (merge_call inside tf.cond).
+            use_xla = not isinstance(strategy, tf.distribute.MirroredStrategy)
             model.compile(
                 optimizer=tf.keras.optimizers.Adam(amsgrad=True), 
                 loss='mse', 
                 metrics=['acc'],
-                jit_compile=True  # Enable XLA for faster GPU execution
+                jit_compile=use_xla
             )
 
         print(f'--- Training Round {current_round} ---')
