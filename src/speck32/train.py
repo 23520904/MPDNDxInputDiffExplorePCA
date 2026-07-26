@@ -1048,7 +1048,7 @@ def train_neural_distinguisher(
 
 
 def train_neural_distinguishers(
-    output_dir='results',
+    output_dir=None,
     starting_round=1,
     epochs=None,
     num_samples=None,
@@ -1060,6 +1060,13 @@ def train_neural_distinguishers(
     override module-level constants (``POS_DELTAS``, ``EPOCHS``, etc.)
     and call this function continue to work without modification.
     """
+    import data_utils.name_generator as name_generator
+    
+    # Tự động tạo thư mục lưu trữ nếu không được cung cấp
+    if not output_dir or output_dir == 'results':
+        suffix = f"speck32_{starting_round}r_{feature_mode}"
+        output_dir = name_generator.generate_experiment_path(category="train", suffix=suffix)
+
     os.makedirs(output_dir, exist_ok=True)
     plain_bits = 32
     input_size = {
@@ -1068,10 +1075,10 @@ def train_neural_distinguishers(
         'full': 7 * plain_bits,
     }[feature_mode]
 
-    print('=' * 60)
-    print('  Train Configuration (Subprocess Isolation)')
-    print('=' * 60)
-    print(f'  Output directory   : {os.path.abspath(output_dir)}')
+    print('=' * 80)
+    print('  🚀 TRAIN NEURAL DISTINGUISHER (Subprocess Isolation)')
+    print('=' * 80)
+    print(f'  📂 Output directory : {os.path.abspath(output_dir)}')
     print(f'  Starting round     : {starting_round}')
     print(f'  Epochs per round   : {epochs if epochs is not None else EPOCHS}')
     print(f'  Training samples   : {(num_samples if num_samples is not None else NUM_SAMPLES):,}')
@@ -1084,7 +1091,7 @@ def train_neural_distinguishers(
     print(f'  Abort below acc    : {ABORT_TRAINING_BELOW_ACC}')
     print(f'  Max retries        : {MAX_RETRIES}')
     print(f'  Heartbeat interval : {HEARTBEAT_INTERVAL_S}s')
-    print('=' * 60)
+    print('=' * 80)
 
     return train_neural_distinguisher(
         starting_round,

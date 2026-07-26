@@ -192,6 +192,21 @@ def explore_polytopic_quadruple_differences(
     Explores polytopic quadruple differences for block ciphers using PCA.
     Uses identical logging format and CSV/TXT output saving logic as explore_polytope_differences.
     """
+    import data_utils.name_generator as name_generator
+    
+    # Tự động tạo thư mục lưu trữ nếu không được cung cấp savepath
+    if not savepath:
+        suffix = f"speck32_{nr}r_{feature_mode}"
+        output_dir = name_generator.generate_experiment_path(category="explore", suffix=suffix)
+        os.makedirs(output_dir, exist_ok=True)
+        savepath = os.path.join(output_dir, "explore_log")
+
+    print('=' * 80)
+    print('  🔍 EXPLORE POLYTOPIC QUADRUPLE DIFFERENCES (PCA)')
+    print('=' * 80)
+    print(f'  📂 Log & CSV sẽ được lưu tại: {os.path.abspath(savepath)}.csv')
+    print('=' * 80)
+
     if random_state is not None:
         random.seed(random_state)
         np.random.seed(random_state)
