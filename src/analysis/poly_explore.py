@@ -176,24 +176,24 @@ def calculate_s_nonlinear(X, Y, sample_size=1000):
 # ---------------------------------------------------------------------------
 # Main Exploration Function
 # ---------------------------------------------------------------------------
-def explore_polytopic_quadruple_differences_v2(
-blocksize=32,
-wordsize=16,
-nr=5,
-datasize=100000,
-max_hamming_weight=1,
-feature_mode='diff',
-t0=0.003,
-t1=3,
-tau_dist=0.001,       # Ngưỡng cho Layer 2
-tau_stable=0.001,     # Ngưỡng cho Layer 3
-n_components=3,
-max_iterations=5000,
-max_good_candidates=50,
-random_state=None,
-savepath=None,
-bit_placement="left",
-left_weight=3.0
+def explore_polytopic_quadruple_differences(
+    blocksize=32,
+    wordsize=16,
+    nr=5,
+    datasize=100000,
+    max_hamming_weight=1,
+    feature_mode='diff',
+    t0=0.003,
+    t1=3,
+    tau_dist=0.001,       # Ngưỡng cho Layer 2
+    tau_stable=0.001,     # Ngưỡng cho Layer 3
+    n_components=3,
+    max_iterations=5000,
+    max_good_candidates=50,
+    random_state=None,
+    savepath=None,
+    bit_placement="left",
+    left_weight=3.0
 ):
     if not savepath:
         suffix = f"speck32_{nr}r_{feature_mode}_v2"
@@ -201,15 +201,15 @@ left_weight=3.0
         os.makedirs(output_dir, exist_ok=True)
         savepath = os.path.join(output_dir, "poly_explore_log")
 
-print('=' * 80)
-print('  🔍 MULTI-LAYER POLYTOPE EXPLORATION v2')
-print('=' * 80)
-print(f'  📂 Log & CSV sẽ được lưu tại: {os.path.abspath(savepath)}.csv')
-print('=' * 80)
+    print('=' * 80)
+    print('  🔍 MULTI-LAYER POLYTOPE EXPLORATION v2')
+    print('=' * 80)
+    print(f'  📂 Log & CSV sẽ được lưu tại: {os.path.abspath(savepath)}.csv')
+    print('=' * 80)
 
-if random_state is not None:
-    random.seed(random_state)
-    np.random.seed(random_state)
+    if random_state is not None:
+        random.seed(random_state)
+        np.random.seed(random_state)
 
     good_candidates = []
 
@@ -363,11 +363,3 @@ if random_state is not None:
                 
     return good_candidates
 
-if __name__ == "__main__":
-    # Test chạy thử (với số vòng thấp để kiểm tra syntax/luồng chạy)
-    print("Khởi chạy thử nghiệm Poly Explore v2...")
-    explore_polytopic_quadruple_differences_v2(
-        nr=5,
-        datasize=20000,
-        max_iterations=50
-    )
