@@ -101,9 +101,27 @@ def train_neural_distinguisher(starting_round, data_generator, model_name, input
     return best_round, best_val_acc
 
 def train_neural_distinguishers(output_dir='results', starting_round=1, epochs=None, num_samples=None, feature_mode='full'):
+   
     os.makedirs(output_dir, exist_ok=True)
     plain_bits = 32
     input_size = {'raw': 4*plain_bits, 'diff': 3*plain_bits, 'full': 7*plain_bits}[feature_mode]
+
+
+    print('=' * 60)
+    print('  Train Configuration')
+    print('=' * 60)
+    print(f'  Output directory   : {os.path.abspath(output_dir)}')
+    print(f'  Starting round     : {starting_round}')
+    print(f'  Epochs per round   : {epochs if epochs is not None else EPOCHS}')
+    print(f'  Training samples   : {num_samples if num_samples is not None else NUM_SAMPLES:,}')
+    print(f'  Validation samples : {NUM_VAL_SAMPLES:,}')
+    print(f'  Batch size         : {BATCH_SIZE:,}')
+    print(f'  Feature mode       : {feature_mode}')
+    print(f'  Input size         : {input_size}')
+    print(f'  Pos deltas         : {POS_DELTAS}')
+    print(f'  Neg deltas         : {NEG_DELTAS}')
+    print(f'  Abort below acc    : {ABORT_TRAINING_BELOW_ACC}')
+    print('=' * 60)
 
     def generator(n, nr):
         gen = pqg.PolytopicQuadrupleGenerator(
