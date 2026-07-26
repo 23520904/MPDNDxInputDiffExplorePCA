@@ -1,4 +1,4 @@
-import crypto.speck as speck
+import speck32.cipher as speck
 import pca_helper
 import csv
 import os
