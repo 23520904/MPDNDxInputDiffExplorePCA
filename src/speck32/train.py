@@ -67,6 +67,39 @@ RETRY_BACKOFF_S = 10
 PROGRESS_REPORT_INTERVAL_S = 60   # orchestrator status print interval
 
 
+# ──────────────────────────────────────────────────────────────────────
+#  FIX: force Keras's Progbar into interactive (\r) mode
+# ──────────────────────────────────────────────────────────────────────
+#
+# model.fit(..., verbose=1) uses tf.keras.utils.Progbar, which checks
+# sys.stdout.isatty() once at startup. Because train_one_round() runs
+# inside a worker subprocess whose stdout is a pipe (not a real
+# terminal), isatty() returns False and Progbar falls back to printing
+# every step on its own line instead of updating in place with '\r'.
+# Wrapping stdout so isatty() reports True restores normal in-place
+# progress-bar behavior. See also the matching orchestrator-side fix
+# in _spawn_and_monitor_worker/_stream(), which is required for the
+# resulting '\r' bytes to survive the trip back to the parent process.
+class _ForceTTYStdout:
+    """Wraps stdout so isatty() reports True. Tricks Keras's Progbar into
+    using carriage-return in-place updates even though our real stdout is
+    a pipe to the orchestrator, not a terminal."""
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def isatty(self):
+        return True
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+def _force_interactive_stdout():
+    if not isinstance(sys.stdout, _ForceTTYStdout):
+        sys.stdout = _ForceTTYStdout(sys.stdout)
+
+
 # ======================================================================
 #  SHARED FUNCTIONS  (imported by train_round.py — single source of truth)
 # ======================================================================
@@ -463,6 +496,8 @@ def train_one_round(
     heartbeat_thread=None,
 ):
     """Train *model* for one round.  Returns the best validation accuracy."""
+    _force_interactive_stdout()  # <-- FIX: makes Keras Progbar use '\r' in-place updates
+
     # -- load previous weights -----------------------------------------
     if load_weight_file and round_number > 1:
         prev = os.path.join(output_dir, f'{model_name}_round{round_number - 1}.h5')
@@ -666,13 +701,17 @@ def _spawn_and_monitor_worker(
     logger.info(f'Timeout: {_fmt_duration(timeout)}')
 
     # -- launch (revision #6: Popen) -----------------------------------
+    # NOTE (FIX): text=True / bufsize=1 removed. Text-mode universal-newline
+    # translation converts a lone '\r' into '\n' on read, which is what
+    # shredded the in-place progress bar into one line per step. We now
+    # read raw bytes (bufsize=0, unbuffered) and decode manually in
+    # _stream() so '\r' survives intact.
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         cwd=str(Path(__file__).parent.parent),
-        text=True,
-        bufsize=1,  # line-buffered
+        bufsize=0,
     )
     logger.info(f'Worker PID: {proc.pid}')
 
@@ -685,13 +724,29 @@ def _spawn_and_monitor_worker(
     log_fh = open(round_log, 'a', encoding='utf-8')
 
     def _stream():
+        """Read raw bytes so '\r' progress-bar updates survive intact
+        instead of being translated into '\n' by universal-newline
+        handling. Writes straight to the real sys.stdout so Colab
+        overwrites the line in place; the log file gets '\r' converted
+        to '\n' so it stays readable as a normal line-based log."""
+        buf = b''
         try:
-            for line in proc.stdout:
-                if line:
-                    print(line, end='', flush=True)
-                    log_fh.write(line)
+            for chunk in iter(lambda: proc.stdout.read(1), b''):
+                buf += chunk
+                if chunk in (b'\n', b'\r'):
+                    text = buf.decode('utf-8', errors='replace')
+                    sys.stdout.write(text)
+                    sys.stdout.flush()
+                    log_fh.write(text.replace('\r', '\n'))
                     log_fh.flush()
                     last_stdout_time[0] = time.time()
+                    buf = b''
+            if buf:  # flush any trailing partial line on process exit
+                text = buf.decode('utf-8', errors='replace')
+                sys.stdout.write(text)
+                sys.stdout.flush()
+                log_fh.write(text.replace('\r', '\n'))
+                log_fh.flush()
         except ValueError:
             pass  # stdout closed
 
@@ -1061,7 +1116,7 @@ def train_neural_distinguishers(
     and call this function continue to work without modification.
     """
     import data_utils.name_generator as name_generator
-    
+
     # Tự động tạo thư mục lưu trữ nếu không được cung cấp
     if not output_dir or output_dir == 'results':
         suffix = f"speck32_{starting_round}r_{feature_mode}"
