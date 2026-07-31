@@ -12,6 +12,34 @@ import data_utils.PolyhedralMultiPairGenerator as make_data
 import importlib
 import data_utils.PolytopicQadrupleGenerator as make_quad_data
 
+# ---------------------------------------------------------------------------
+# DUS explorer — re-exported from distributional_explore for a unified API.
+# Import this module and use explore_dus / dus_score / ParetoArchive directly.
+# ---------------------------------------------------------------------------
+try:
+    from analysis.distributional_explore import (  # noqa: F401
+        linear_time_mmd2,
+        random_fourier_features,
+        hsic_rff,
+        interaction_residual,
+        dus_score,
+        ParetoArchive,
+        explore_dus,
+        make_quadruples_adapter,
+    )
+except ImportError:
+    # Fallback for environments that run from inside src/analysis/
+    from distributional_explore import (  # noqa: F401
+        linear_time_mmd2,
+        random_fourier_features,
+        hsic_rff,
+        interaction_residual,
+        dus_score,
+        ParetoArchive,
+        explore_dus,
+        make_quadruples_adapter,
+    )
+
 
 # ---------------------------------------------------------------------------
 # Weighted sampling helper (for biased bit placement)
@@ -171,7 +199,7 @@ def diff_hex(d):
 
 
 
-def explore_polytopic_quadruple_differences(
+def explore_legacy_pca_kmeans(
     blocksize=32,
     wordsize=16,
     nr=5,
@@ -189,8 +217,10 @@ def explore_polytopic_quadruple_differences(
     left_weight=3.0
 ):
     """
-    Explores polytopic quadruple differences for block ciphers using PCA.
-    Uses identical logging format and CSV/TXT output saving logic as explore_polytope_differences.
+    Legacy PCA + K-means + silhouette explorer for polytopic quadruple differences.
+
+    Kept for backward compatibility and side-by-side calibration against the new
+    DUS-based ``explore_dus`` path.  Use ``explore_dus`` for new searches.
     """
     import data_utils.name_generator as name_generator
     
@@ -415,3 +445,10 @@ def explore_polytopic_quadruple_differences(
                         eigen_value.max(),
                         elapsed_time
                     ])
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible alias — existing call sites continue to work.
+# New code should call explore_legacy_pca_kmeans explicitly.
+# ---------------------------------------------------------------------------
+explore_polytopic_quadruple_differences = explore_legacy_pca_kmeans

@@ -15,6 +15,32 @@ from sklearn.decomposition import KernelPCA
 from sklearn.model_selection import KFold
 
 # ---------------------------------------------------------------------------
+# DUS explorer — re-exported from distributional_explore for a unified API.
+# ---------------------------------------------------------------------------
+try:
+    from analysis.distributional_explore import (  # noqa: F401
+        linear_time_mmd2,
+        random_fourier_features,
+        hsic_rff,
+        interaction_residual,
+        dus_score,
+        ParetoArchive,
+        explore_dus,
+        make_quadruples_adapter,
+    )
+except ImportError:
+    from distributional_explore import (  # noqa: F401
+        linear_time_mmd2,
+        random_fourier_features,
+        hsic_rff,
+        interaction_residual,
+        dus_score,
+        ParetoArchive,
+        explore_dus,
+        make_quadruples_adapter,
+    )
+
+# ---------------------------------------------------------------------------
 # Generator helpers (Copied from explore.py)
 # ---------------------------------------------------------------------------
 def _weighted_sample_without_replacement(population, weights, k):
@@ -176,7 +202,7 @@ def calculate_s_nonlinear(X, Y, sample_size=1000):
 # ---------------------------------------------------------------------------
 # Main Exploration Function
 # ---------------------------------------------------------------------------
-def explore_polytopic_quadruple_differences(
+def explore_legacy_pca_kmeans(
     blocksize=32,
     wordsize=16,
     nr=5,
@@ -185,8 +211,8 @@ def explore_polytopic_quadruple_differences(
     feature_mode='diff',
     t0=0.003,
     t1=3,
-    tau_dist=0.001,       # Ngưỡng cho Layer 2
-    tau_stable=0.001,     # Ngưỡng cho Layer 3
+    tau_dist=0.001,
+    tau_stable=0.001,
     n_components=3,
     max_iterations=5000,
     max_good_candidates=50,
@@ -195,6 +221,11 @@ def explore_polytopic_quadruple_differences(
     bit_placement="left",
     left_weight=3.0
 ):
+    """Legacy multi-layer PCA + energy-distance + KernelPCA explorer.
+
+    Kept for backward compatibility and side-by-side calibration against the
+    new DUS-based ``explore_dus`` path.  Use ``explore_dus`` for new searches.
+    """
     if not savepath:
         suffix = f"speck32_{nr}r_{feature_mode}_v2"
         output_dir = name_generator.generate_experiment_path(category="explore", suffix=suffix)
@@ -363,3 +394,9 @@ def explore_polytopic_quadruple_differences(
                 
     return good_candidates
 
+
+# ---------------------------------------------------------------------------
+# Backward-compatible alias — existing call sites continue to work.
+# New code should call explore_legacy_pca_kmeans explicitly.
+# ---------------------------------------------------------------------------
+explore_polytopic_quadruple_differences = explore_legacy_pca_kmeans
